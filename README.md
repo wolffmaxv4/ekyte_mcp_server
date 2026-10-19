@@ -97,6 +97,7 @@ Se preferir fazer manualmente (sem o PRD), as seções abaixo cobrem cada parte 
 | `ekyte_list_task_flow_phases` | Lista as fases de uma tarefa específica, com executor/datas/esforço POR FASE |
 | `ekyte_get_task` | Detalhes de uma tarefa específica |
 | `ekyte_list_time_entries` | Lista apontamentos de horas |
+| `ekyte_daily_report` | Relatório diário: tarefas e horas do dia por pessoa, sobrecarga, estouros e mapa de atrasos |
 
 ### Escrita (destrutivo — pede confirmação)
 

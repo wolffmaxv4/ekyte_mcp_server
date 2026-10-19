@@ -19,10 +19,9 @@ export const ListTasksSchema = z.object({
     .describe("Filtro de texto (case-insensitive) no título da tarefa. Ex: 'playbook'."),
   workspace_id: z.number().int().positive().optional()
     .describe("ID do workspace para filtrar. Use ekyte_list_workspaces para descobrir."),
-  status: z.number()
-    .int()
-    .optional()
-    .describe("Filtro por situação: 10=Ativas, 20=Pausadas, 30=Concluídas, 40=Canceladas. Padrão: 10 (Ativas)"),
+  status: z.union([z.literal(0), z.literal(10), z.literal(20), z.literal(30), z.literal(40)])
+    .default(10)
+    .describe("Filtro por situação: 10=Ativas, 20=Pausadas, 30=Concluídas, 40=Canceladas, 0=Todas. Padrão: 10 (Ativas)"),
   task_type_id: z.number().int().positive().optional()
     .describe("ID do tipo de tarefa para filtrar. Use ekyte_list_task_types para descobrir."),
   phase_id: z.number().int().positive().optional()
@@ -34,9 +33,9 @@ export const ListTasksSchema = z.object({
   created_to: DateSchema.optional()
     .describe("Filtrar tasks criadas até esta data (AAAA-MM-DD)"),
   due_from: DateSchema.optional()
-    .describe("Filtrar por data de entrega a partir de (AAAA-MM-DD)"),
+    .describe("Filtrar por data de entrega (atual) a partir de (AAAA-MM-DD)"),
   due_to: DateSchema.optional()
-    .describe("Filtrar por data de entrega até (AAAA-MM-DD)"),
+    .describe("Filtrar por data de entrega (atual) até (AAAA-MM-DD). Ex: due_to=ontem + status=10 → tarefas atrasadas."),
   page: z.number().int().min(1).default(1)
     .describe("Página do resultado filtrado (paginação client-side, 50 por página)."),
   response_format: z.nativeEnum(ResponseFormat)

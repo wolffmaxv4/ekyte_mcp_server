@@ -34,3 +34,5 @@ npm-debug.log*
 
 # Screenshots gerados pelo Windows (nome em formato UUID)
 {*}.png
+
+.claude/settings.local.json

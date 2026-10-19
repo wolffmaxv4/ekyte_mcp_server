@@ -7,6 +7,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { apiGet, companyUrl, companyV2Url, handleApiError } from "../services/ekyte-client.js";
+import { fetchTasks } from "../services/tasks.js";
 import { TASK_STATUS_LABELS, CHARACTER_LIMIT } from "../constants.js";
 import { ResponseFormat } from "../schemas/common.js";
 import {
@@ -410,8 +411,11 @@ Retorna: id, nome, sequencial, ativo.`,
       title: "Listar Tarefas do Ekyte",
       description: `Lista tarefas da empresa no Ekyte com filtros opcionais.
 
-Filtros server-side: workspace_id, status, task_type_id, phase_id, executor_id, datas.
-Filtro client-side: search (texto no título).
+Filtros server-side: workspace_id, status, task_type_id, phase_id, executor_id.
+Filtros client-side: datas (due_from/due_to/created_from/created_to — a API ignora datas), search (texto no título).
+Status padrão: 10 (Ativas). Use status=0 para todas.
+
+Para um panorama diário (tarefas do dia, carga por pessoa, atrasos), prefira ekyte_daily_report.
 
 PAGINAÇÃO: a API do Ekyte não pagina este endpoint — o MCP faz paginação client-side (50 por página) após aplicar todos os filtros.
 
@@ -428,22 +432,7 @@ Retorna: id, título, status, responsável, datas, tempo estimado/real, workspac
     },
     async (params: ListTasksInput) => {
       try {
-        const queryParams: Record<string, unknown> = {
-          limit: TASKS_FETCH_LIMIT,
-        };
-
-        if (params.workspace_id !== undefined) queryParams.workspaceId = params.workspace_id;
-        if (params.status !== undefined) queryParams.situation = params.status;
-        if (params.task_type_id !== undefined) queryParams.ctcTaskTypeId = params.task_type_id;
-        if (params.phase_id !== undefined) queryParams.phaseId = params.phase_id;
-        if (params.executor_id !== undefined) queryParams.executorId = params.executor_id;
-        if (params.created_from) queryParams.createdFrom = params.created_from;
-        if (params.created_to) queryParams.createdTo = params.created_to;
-        if (params.due_from) queryParams.dueFrom = params.due_from;
-        if (params.due_to) queryParams.dueTo = params.due_to;
-
-        const data = await apiGet<EkyteTask[]>(companyV2Url("ctc-tasks"), queryParams);
-        const all = Array.isArray(data) ? data : [];
+        const { tasks: all } = await fetchTasks(params);
 
         const filtered = params.search
           ? all.filter((t) => matchSearch(t.title, params.search!))
@@ -451,7 +440,7 @@ Retorna: id, título, status, responsável, datas, tempo estimado/real, workspac
 
         if (filtered.length === 0) {
           const hint = params.search
-            ? `Nenhuma tarefa encontrada para "${params.search}". Total com filtros server-side: ${all.length}.`
+            ? `Nenhuma tarefa encontrada para "${params.search}". Total com os demais filtros: ${all.length}.`
             : "Nenhuma tarefa encontrada com os filtros informados.";
           return { content: [{ type: "text" as const, text: hint }] };
         }

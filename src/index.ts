@@ -24,6 +24,7 @@ import type { Request, Response, NextFunction } from "express";
 
 import { registerReadTools } from "./tools/read-tools.js";
 import { registerWriteTools } from "./tools/write-tools.js";
+import { registerReportTools } from "./tools/report-tools.js";
 
 // ============ Global error handlers (prevent silent crash) ============
 
@@ -43,6 +44,7 @@ function createServer(): McpServer {
   });
   registerReadTools(s);
   registerWriteTools(s);
+  registerReportTools(s);
   return s;
 }
 

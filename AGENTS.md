@@ -11,10 +11,11 @@ Este e o servidor MCP (Model Context Protocol) do Ekyte, uma plataforma de gesta
 | `ekyte_list_users` | Lista usuarios/membros | `search` para filtrar por nome ou email |
 | `ekyte_list_task_types` | Lista tipos de tarefa (templates) | Retorna `workflow_id` necessario para phases |
 | `ekyte_list_phases` | Lista fases de um workflow (template) | `workflow_id` obrigatorio |
-| `ekyte_list_tasks` | Lista tarefas com filtros | Filtre por `workspace_id` para performance |
+| `ekyte_list_tasks` | Lista tarefas com filtros (padrão: ativas; datas filtradas no MCP) | Filtre por `workspace_id` para performance |
 | `ekyte_get_task` | Detalhes de uma tarefa | `task_id` obrigatorio |
 | `ekyte_list_task_flow_phases` | Fases reais de uma tarefa com executores | `task_id` obrigatorio |
 | `ekyte_list_time_entries` | Apontamentos de horas | `workspace_id` + `date_from`/`date_to` |
+| `ekyte_daily_report` | Panorama diário: tarefas/horas por pessoa, gargalos, mapa de atrasos | `date` (padrão hoje), `workspace_id`, `executor_id` |
 
 ### Escrita
 | Tool | Descricao | Confirmar com usuario? |
