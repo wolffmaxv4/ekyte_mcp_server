@@ -162,6 +162,8 @@ Se preferir fazer manualmente (sem o PRD), as seções abaixo cobrem cada parte 
 EKYTE_BEARER_TOKEN=seu_jwt_aqui        # obrigatório
 EKYTE_COMPANY_ID=1234                  # obrigatório (numérico)
 TRANSPORT=http                         # "http" p/ servidor remoto, "stdio" p/ Claude Desktop local
+MCP_PATH_SECRET=<48 hex aleatórios>    # recomendado em deploy público: endpoint vira /mcp/<segredo>
+READ_ONLY=true                         # opcional: expõe só tools de leitura
 PORT=3000                              # porta HTTP (default 3000)
 ```
 

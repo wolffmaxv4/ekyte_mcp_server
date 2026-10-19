@@ -43,8 +43,9 @@ function createServer(): McpServer {
     version: "1.0.0",
   });
   registerReadTools(s);
-  registerWriteTools(s);
   registerReportTools(s);
+  // READ_ONLY=true: expose only read tools (recommended for public HTTP deploys)
+  if (process.env.READ_ONLY !== "true") registerWriteTools(s);
   return s;
 }
 
@@ -63,12 +64,23 @@ async function runStdio(): Promise<void> {
 async function runHTTP(): Promise<void> {
   validateEnv();
 
+  // MCP_PATH_SECRET: serve the MCP at /mcp/<secret> instead of /mcp. The HTTP
+  // transport has no auth of its own, and claude.ai custom connectors can't send
+  // custom headers, so an unguessable path is what keeps the endpoint private.
+  const secret = process.env.MCP_PATH_SECRET;
+  if (secret !== undefined && secret.length < 24) {
+    console.error("ERRO: MCP_PATH_SECRET deve ter pelo menos 24 caracteres.");
+    process.exit(1);
+  }
+  const mcpPath = secret ? `/mcp/${secret}` : "/mcp";
+
   const app = express();
   app.use(express.json({ limit: "4mb" }));
 
   // Access log
   app.use((req: Request, _res: Response, next: NextFunction) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    const path = secret ? req.path.split(secret).join("***") : req.path;
+    console.log(`[${new Date().toISOString()}] ${req.method} ${path}`);
     next();
   });
 
@@ -81,13 +93,13 @@ async function runHTTP(): Promise<void> {
     next();
   });
 
-  app.options("/mcp", (_req: Request, res: Response) => {
+  app.options(mcpPath, (_req: Request, res: Response) => {
     res.status(204).end();
   });
 
   // Root — so EasyPanel probes / upstream pings don't flood logs with 404
   app.get("/", (_req: Request, res: Response) => {
-    res.json({ server: "ekyte-mcp-server", status: "ok", endpoint: "/mcp", health: "/health" });
+    res.json({ server: "ekyte-mcp-server", status: "ok", health: "/health" });
   });
 
   app.get("/health", (_req: Request, res: Response) => {
@@ -95,7 +107,7 @@ async function runHTTP(): Promise<void> {
   });
 
   // MCP endpoint — stateless mode: new server + transport per request
-  app.post("/mcp", async (req: Request, res: Response) => {
+  app.post(mcpPath, async (req: Request, res: Response) => {
     try {
       const server = createServer();
       const transport = new StreamableHTTPServerTransport({
@@ -126,7 +138,7 @@ async function runHTTP(): Promise<void> {
     }
   });
 
-  app.get("/mcp", (_req: Request, res: Response) => {
+  app.get(mcpPath, (_req: Request, res: Response) => {
     res.status(405).json({
       jsonrpc: "2.0",
       error: { code: -32000, message: "SSE not supported in stateless mode. Use POST." },
@@ -134,7 +146,7 @@ async function runHTTP(): Promise<void> {
     });
   });
 
-  app.delete("/mcp", (_req: Request, res: Response) => {
+  app.delete(mcpPath, (_req: Request, res: Response) => {
     res.status(405).json({
       jsonrpc: "2.0",
       error: { code: -32000, message: "Session termination not supported in stateless mode." },
@@ -150,7 +162,8 @@ async function runHTTP(): Promise<void> {
 
   const port = parseInt(process.env.PORT || "3000", 10);
   const httpServer = app.listen(port, "0.0.0.0", () => {
-    console.error(`Ekyte MCP Server running on http://0.0.0.0:${port}/mcp`);
+    console.error(`Ekyte MCP Server running on http://0.0.0.0:${port}${secret ? "/mcp/***" : "/mcp"}`);
+    if (!secret) console.error("AVISO: MCP_PATH_SECRET não definido — o endpoint /mcp está aberto a qualquer um.");
     console.error(`Health check: http://0.0.0.0:${port}/health`);
   });
 
@@ -183,6 +196,8 @@ function validateEnv(): void {
     console.error("Opcionais:");
     console.error("  TRANSPORT            - 'stdio' (padrão) ou 'http'");
     console.error("  PORT                 - Porta do servidor HTTP (padrão: 3000)");
+    console.error("  MCP_PATH_SECRET      - Segredo no caminho do endpoint HTTP (/mcp/<segredo>)");
+    console.error("  READ_ONLY            - 'true' para expor só tools de leitura");
     process.exit(1);
   }
 }
